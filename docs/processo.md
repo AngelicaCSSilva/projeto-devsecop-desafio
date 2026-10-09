@@ -8,7 +8,7 @@
 
 3. Adicionado `workflow_dispatch`, permitindo iniciar o workflow manualmente.
 
-4. O Gitleaks encontrou uma chave de API em um commit antigo de `src/script.js`. Apagar a chave do arquivo atual não remove o conteúdo dos commits anteriores.
+4. [O Gitleaks encontrou uma chave de API em um commit antigo](https://github.com/AngelicaCSSilva/projeto-devsecop-desafio/actions/runs/37865413933) de `src/script.js`. Apagar a chave do arquivo atual não remove o conteúdo dos commits anteriores.
 
 ```shell
 Finding:     const API_KEY = "REDACTED"
@@ -34,15 +34,17 @@ Link:        https://github.com/AngelicaCSSilva/projeto-devsecop-desafio/blob/cd
 
 6. A cópia reescrita foi verificada com o Gitleaks antes do envio das branches atualizadas ao GitHub.
 
-7. Adicionado step para verificar se as secrets estão cadastradas. 
+7. [A limpeza foi validada pelo workflow](https://github.com/AngelicaCSSilva/projeto-devsecop-desafio/actions/runs/37865805002/job/113612129961).
 
-8. Em `src/script.js`, os textos `SECRET_API_KEY` e `SECRET_DB_PASSWORD` foram mantidos como marcadores. O passo `Inserir Secrets no JavaScript` recebe `API_KEY` e `DB_PASSWORD` do GitHub Actions por `env` e usa `sed -i` para substituir os marcadores no checkout do runner. Essa alteração é feita durante a execução do workflow e não altera os commits do repositório.
+8. Adicionado step para verificar se as secrets estão cadastradas. 
 
-9. Após a substituição, um loop Bash percorre `API_KEY` e `DB_PASSWORD`. Para cada variável, `grep -Fq` procura o valor correspondente em `src/script.js`; se não encontrar algum deles, o passo encerra com erro. A verificação confirma que a substituição ocorreu, sem imprimir os valores dos secrets nos logs.
+9. Em `src/script.js`, os textos `SECRET_API_KEY` e `SECRET_DB_PASSWORD` foram mantidos como marcadores. O passo `Inserir Secrets no JavaScript` recebe `API_KEY` e `DB_PASSWORD` do GitHub Actions por `env` e usa `sed -i` para substituir os marcadores no checkout do runner. Essa alteração é feita durante a execução do workflow e não altera os commits do repositório.
 
-10. Adicionado o Semgrep para executar o SAST, uma análise que procura padrões de código potencialmente inseguros. O comando analisa `src/` usando as regras `auto` e `p/xss`. Com `--error`, a pipeline falha quando o Semgrep encontra um problema.
+10. Após a substituição, um loop Bash percorre `API_KEY` e `DB_PASSWORD`. Para cada variável, `grep -Fq` procura o valor correspondente em `src/script.js`; se não encontrar algum deles, o passo encerra com erro. A verificação confirma que a substituição ocorreu, sem imprimir os valores dos secrets nos logs.
 
-11. Na primeira análise, o Semgrep encontrou o uso de `eval()` em `src/script.js`. O conteúdo digitado pelo usuário (`input.value`) é concatenado em uma string executada pelo `eval()`, o que pode permitir injeção de código. O achado foi classificado como bloqueante:
+11. Adicionado o Semgrep para executar o SAST, uma análise que procura padrões de código potencialmente inseguros. O comando analisa `src/` usando as regras `auto` e `p/xss`. Com `--error`, a pipeline falha quando o Semgrep encontra um problema.
+
+12. [Na primeira análise](https://github.com/AngelicaCSSilva/projeto-devsecop-desafio/actions/runs/37871807731), o Semgrep encontrou o uso de `eval()` em `src/script.js`. O conteúdo digitado pelo usuário (`input.value`) é concatenado em uma string executada pelo `eval()`, o que pode permitir injeção de código. O achado foi classificado como bloqueante:
 
 ```shell
 src/script.js
