@@ -26,13 +26,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ⚠️ Assim que remover segredos do código, passar pra cá
-      # Obs: não é uma alternativa tão robusta quanto um Vault por exemplo, mas já que o segredo estava em código....
-      # Dicas para cada variável:
-      #   - adicione um env 
-      #   - crie um segredo correspondente no github
-      #   - insira uma referência para encontrá-la no código (exemplo CHAVE = "__CHAVE__")
-      #   - injete a variável na referência, usando um sed 
+      - name: 🔐 Validar secrets obrigatórios
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        shell: bash
+        run: |
+          for secret in API_KEY DB_PASSWORD; do
+            if [ -z "${!secret}" ]; then
+              echo "::error::O secret $secret não está configurado ou está vazio"
+              exit 1
+            fi
+          done
+
       - name: 🔐 Inserir Secrets no JavaScript
         #env:
           #VAR: ${{ secrets.VAR  }}
