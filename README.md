@@ -23,8 +23,20 @@ A pipeline está **incompleta**. Os steps de segurança precisam ser implementad
 - [ ] Deploy com **GitHub Pages**
 
 ## Como a pipeline funciona
-> **Substitua este bloco pela sua explicação após implementar a pipeline.**
-> Descreva cada step, o que ele faz e por que ele é importante para a segurança.
+> [!NOTE]
+> O histórico de como este workflow foi montado está em `docs/processo.md`.
+
+O workflow criado realiza as seguintes etapas:
+
+1. **O GitHub prepara o projeto.** Ele baixa uma cópia dos arquivos e do histórico do repositório. A versão da ferramenta de checkout foi fixada para que o workflow use sempre a mesma versão.
+
+2. **Confere os valores necessários.** `API_KEY` e `DB_PASSWORD` são valores cadastrados na área de secrets do GitHub, fora dos arquivos do projeto. O workflow confere se ambos existem e não estão vazios. Se faltar algum, para e mostra qual precisa ser cadastrado, sem revelar seu conteúdo.
+
+3. **Preenche e confere os marcadores.** `src/script.js` contém textos de exemplo no lugar dos valores. O `sed` troca esses textos pelos valores dos secrets durante a execução. Depois, o `grep` confirma se os dois textos foram encontrados no arquivo. Se algum não aparecer, a etapa falha.
+
+4. **Faz uma conferência básica.** A etapa chamada “Build” só lista os arquivos e escreve “Build OK”. Ela ainda não constrói nem testa o site, servindo apenas como uma etapa ilustrativa.
+
+5. **Procura credenciais expostas com Gitleaks.** Ele verifica os commits incluídos na execução, procurando valores que pareçam senhas ou chaves salvos no Git. Essa busca não confere o arquivo que foi alterado temporariamente durante a execução.
 
 ## URL de Produção
 > Adicione aqui o link do GitHub Pages após o deploy.

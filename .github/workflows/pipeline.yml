@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,23 +22,48 @@ jobs:
 
     steps:
       - name: 📥 Checkout do Código
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      # ⚠️ Assim que remover segredos do código, passar pra cá
-      # Obs: não é uma alternativa tão robusta quanto um Vault por exemplo, mas já que o segredo estava em código....
-      # Dicas para cada variável:
-      #   - adicione um env 
-      #   - crie um segredo correspondente no github
-      #   - insira uma referência para encontrá-la no código (exemplo CHAVE = "__CHAVE__")
-      #   - injete a variável na referência, usando um sed 
-      - name: 🔐 Inserir Secrets no JavaScript
-        #env:
-          #VAR: ${{ secrets.VAR  }}
+      - name: 🔐 Validar secrets obrigatórios
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        shell: bash
         run: |
-          echo "Nenhum segredo inserido no código por enquanto"
-      #   sed -i "s|__VAR__|$VAR|g" src/script.js
+          for secret in API_KEY DB_PASSWORD; do
+            if [ -z "${!secret}" ]; then
+              echo "::error::O secret $secret não está configurado ou está vazio"
+              exit 1
+            fi
+            echo "::notice::O secret $secret configurado com sucesso"
+          done
+
+      - name: 🔐 Inserir Secrets no JavaScript
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        shell: bash
+        run: |
+          sed -i "s|SECRET_API_KEY|${API_KEY}|g" src/script.js
+          sed -i "s|SECRET_DB_PASSWORD|${DB_PASSWORD}|g" src/script.js
+
+      - name: 🔐 Validar inserção dos valores da secret
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        shell: bash
+        run: |
+          for key in API_KEY DB_PASSWORD; do
+            value="${!key}"
+            if grep -Fq -- "$value" src/script.js; then
+              echo "$key inserida com sucesso"
+            else
+              echo "::error::Falha ao inserir $key"
+              exit 1
+            fi
+          done
 
       - name: ⚙️ Build
         run: |
@@ -44,10 +71,10 @@ jobs:
           ls src/
           echo "Build OK!"
 
-      # ❌ PASSO A IMPLEMENTAR — Secrets Scanning com Gitleaks
-      # Dica: use a action oficial "gitleaks/gitleaks-action@v2" e passe o
       - name: 🔑 Secrets Scanning
-        run: echo "TODO - implemente o Secrets Scanning com Gitleaks aqui"
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ❌ PASSO A IMPLEMENTAR — SAST com Semgrep
       # Dica: instale com "pip install semgrep" e rode
