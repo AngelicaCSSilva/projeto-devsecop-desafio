@@ -37,6 +37,7 @@ jobs:
               echo "::error::O secret $secret não está configurado ou está vazio"
               exit 1
             fi
+            echo "::notice::O secret $secret configurado com sucesso"
           done
 
       - name: 🔐 Inserir Secrets no JavaScript
