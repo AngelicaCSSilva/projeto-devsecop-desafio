@@ -15,3 +15,7 @@
 6. A cópia reescrita foi verificada com o Gitleaks antes do envio das branches atualizadas ao GitHub.
 
 7. Adicionado step para verificar se as secrets estão cadastradas. 
+
+8. Em `src/script.js`, os textos `SECRET_API_KEY` e `SECRET_DB_PASSWORD` foram mantidos como marcadores. O passo `Inserir Secrets no JavaScript` recebe `API_KEY` e `DB_PASSWORD` do GitHub Actions por `env` e usa `sed -i` para substituir os marcadores no checkout do runner. Essa alteração é feita durante a execução do workflow e não altera os commits do repositório.
+
+9. Após a substituição, um loop Bash percorre `API_KEY` e `DB_PASSWORD`. Para cada variável, `grep -Fq` procura o valor correspondente em `src/script.js`; se não encontrar algum deles, o passo encerra com erro. A verificação confirma que a substituição ocorreu, sem imprimir os valores dos secrets nos logs.
