@@ -8,3 +8,8 @@
 
 3. Adicionado `workflow_dispatch`, permitindo iniciar o workflow manualmente.
 
+4. O Gitleaks encontrou uma chave de API em um commit antigo de `src/script.js`. Apagar a chave do arquivo atual não remove o conteúdo dos commits anteriores.
+
+5. Para limpar o histórico, foi criado um arquivo temporário de substituições, fora do repositório. O `git-filter-repo` reescreveu os commits afetados, substituindo o valor exposto por `SECRET_API_KEY` e `SECRET_DB_PASSWORD`.
+
+6. A cópia reescrita foi verificada com o Gitleaks antes do envio das branches atualizadas ao GitHub.
