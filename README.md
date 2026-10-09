@@ -38,5 +38,7 @@ O workflow criado realiza as seguintes etapas:
 
 5. **Procura credenciais expostas com Gitleaks.** Ele verifica os commits incluídos na execução, procurando valores que pareçam senhas ou chaves salvos no Git. Essa busca não confere o arquivo que foi alterado temporariamente durante a execução.
 
+6. **Analisa o código com Semgrep.** Essa ferramenta procura padrões que podem indicar falhas de segurança. A opção `--error` faz essa etapa falhar se a análise encontrar problemas.
+
 ## URL de Produção
 > Adicione aqui o link do GitHub Pages após o deploy.
