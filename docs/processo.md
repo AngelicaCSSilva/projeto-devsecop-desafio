@@ -13,3 +13,5 @@
 5. Para limpar o histórico, foi criado um arquivo temporário de substituições, fora do repositório. O `git-filter-repo` reescreveu os commits afetados, substituindo o valor exposto por `SECRET_API_KEY` e `SECRET_DB_PASSWORD`.
 
 6. A cópia reescrita foi verificada com o Gitleaks antes do envio das branches atualizadas ao GitHub.
+
+7. Adicionado step para verificar se as secrets estão cadastradas. 
