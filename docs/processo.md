@@ -57,3 +57,10 @@ src/script.js
 
        29┆ eval('console.log("Tarefa adicionada: ' + input.value + '")');
 ```
+
+> [!NOTE]
+> Ref.: https://semgrep.dev/r?q=javascript.browser.security.eval-detected.eval-detected
+
+13. [Correção validada pelo workflow](https://github.com/AngelicaCSSilva/projeto-devsecop-desafio/actions/runs/37872696239). 
+
+14. 
