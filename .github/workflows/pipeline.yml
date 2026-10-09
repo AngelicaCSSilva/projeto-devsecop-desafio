@@ -49,9 +49,21 @@ jobs:
           sed -i "s|SECRET_API_KEY|${API_KEY}|g" src/script.js
           sed -i "s|SECRET_DB_PASSWORD|${DB_PASSWORD}|g" src/script.js
 
+      - name: 🔐 Validar inserção dos valores da secret
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        shell: bash
         run: |
-          echo "Nenhum segredo inserido no código por enquanto"
-      #   sed -i "s|__VAR__|$VAR|g" src/script.js
+          for key in API_KEY DB_PASSWORD; do
+            value="${!key}"
+            if grep -Fq -- "$value" src/script.js; then
+              echo "$key inserida com sucesso"
+            else
+              echo "::error::Falha ao inserir $key"
+              exit 1
+            fi
+          done
 
       - name: ⚙️ Build
         run: |
