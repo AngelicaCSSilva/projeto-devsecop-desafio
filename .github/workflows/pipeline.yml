@@ -41,8 +41,14 @@ jobs:
           done
 
       - name: 🔐 Inserir Secrets no JavaScript
-        #env:
-          #VAR: ${{ secrets.VAR  }}
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        shell: bash
+        run: |
+          sed -i "s|SECRET_API_KEY|${API_KEY}|g" src/script.js
+          sed -i "s|SECRET_DB_PASSWORD|${DB_PASSWORD}|g" src/script.js
+
         run: |
           echo "Nenhum segredo inserido no código por enquanto"
       #   sed -i "s|__VAR__|$VAR|g" src/script.js
