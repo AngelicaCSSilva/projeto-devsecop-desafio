@@ -1,11 +1,24 @@
 name: 🔐 Pipeline DevSecOps
 
 on:
+  # Push na branch main - Mesmo que ela seja protegida e só receba PRs aprovados. Uma camada adicional de segurança e verificação.
   push:
     branches:
       - main
   
+  # Pull Request para a branch main - Será executada quando um PR for aberto, reaberto ou sincronizado. Bloqueio e exigência de sucesso em ruleset do github.
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+  # Disparos manuais - Permite que o desenvolvedor possa validar sua branch antes de abrir o PR. Em situação real, pode ser um workflow separado ou o mesmo apenas com ajustes de condições nos jobs e actions.
   workflow_dispatch:
+
+  # [DESABILITADO - APENAS EXEMPLO]
+  # Disparos agendados - Permite que o workflow seja executado em horários específicos, como uma varredura semanal de segurança. Garante que a branch estável sempre seja verificada.
+  # schedule:
+  #   - cron: '0 3 * * 1' # Toda segunda-feira, 00:00 no horário de Brasília (UTC-3)
 
 permissions:
   contents: read
@@ -70,11 +83,36 @@ jobs:
           echo "Verificando arquivos..."
           ls src/
           echo "Build OK!"
+                
+      - name: 🔑 Secrets Scanning [histórico completo]
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        run: |
+          # v8.30.1
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            git --verbose --redact --log-opts="--all" .
 
-      - name: 🔑 Secrets Scanning
-        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+      - name: 🔑 Secrets Scanning [commits do evento]
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.after }}
+        shell: bash
+        run: |
+          if [[ "$BASE_SHA" =~ ^0+$ ]]; then
+            LOG_OPTS="--all"
+          else
+            LOG_OPTS="--all $BASE_SHA..$HEAD_SHA"
+          fi
+
+          # v8.30.1
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            -w /repo \
+            ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+            git --verbose --redact --log-opts="$LOG_OPTS" 
 
       - name: 🔍 SAST - Semgrep
         shell: bash
@@ -139,6 +177,7 @@ jobs:
   # ────────────────────────────────────────────────────────────────
   deploy:
     name: Verificação e Deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:
