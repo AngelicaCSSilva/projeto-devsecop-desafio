@@ -79,4 +79,8 @@ Para analisar apenas um intervalo de commits, usa-se `LOG_OPTS="--all $BASE_SHA.
 
 15. Versão da imagem do GitLeaks fixada por SHA (v8.30.1), evitando o uso de `latest` ou tags.
 
+16. Com os novos trigger, as PRs começam a disparar o fluxo. Até a finalização do workflow, a ruleset bloqueante não será ativada.
+
+
+
 
