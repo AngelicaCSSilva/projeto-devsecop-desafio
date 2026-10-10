@@ -90,3 +90,9 @@ Para analisar apenas um intervalo de commits, usa-se `LOG_OPTS="--all $BASE_SHA.
 20. O empacotamento, o cálculo do hash, a assinatura demonstrativa e o upload foram movidos para o job `package-artifact`, condicionado ao sucesso das três análises.
 
 21. O deploy depende do sucesso do empacotamento do artefato.
+
+22. O job `package-artifact` assina `artifact.tar` com `cosign sign-blob --yes --bundle artifact.sigstore.json`. A assinatura é keyless: o Cosign usa a identidade OIDC do GitHub Actions e uma chave efêmera, sem chave privada persistente no repositório. O bundle é enviado junto com o artefato.
+
+23. Antes do deploy, o job `deploy` executa `cosign verify-blob` sobre `artifact.tar`, usando o bundle, o emissor `https://token.actions.githubusercontent.com` e `--certificate-identity-regexp` para aceitar identidades de workflows em `.github/workflows/` deste repositório. A verificação falha se o conteúdo não corresponder à assinatura ou se a identidade não for aceita; a extração e o deploy ocorrem depois dela.
+
+25. Concluída a criação e estruturação do workflow.
