@@ -81,6 +81,12 @@ Para analisar apenas um intervalo de commits, usa-se `LOG_OPTS="--all $BASE_SHA.
 
 16. Com os novos trigger, as PRs começam a disparar o fluxo. Até a finalização do workflow, a ruleset bloqueante não será ativada.
 
+17. A validação dos secrets obrigatórios foi isolada no job `verify`. O job `build` depende dessa validação e mantém a etapa de build como simulação.
 
+18. Gitleaks, Semgrep e Grype foram separados em jobs com checkout próprio. As três análises executam em paralelo após o job `build`.
 
+19. Adicionado o SCA com Grype, precedido pela geração do `package-lock.json`. 
 
+20. O empacotamento, o cálculo do hash, a assinatura demonstrativa e o upload foram movidos para o job `package-artifact`, condicionado ao sucesso das três análises.
+
+21. O deploy depende do sucesso do empacotamento do artefato.
