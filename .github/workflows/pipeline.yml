@@ -27,10 +27,10 @@ permissions:
 
 jobs:
   # ────────────────────────────────────────────────────────────────
-  # JOB 1 — Build, segurança e assinatura do artefato
+  # JOB 1 — Validações necessárias (variáveis, secrets)
   # ────────────────────────────────────────────────────────────────
-  build:
-    name: Build, Segurança e Assinatura
+  verify:
+    name: Verificações de variáveis e secrets cadastradas
     runs-on: ubuntu-latest
 
     steps:
@@ -52,6 +52,20 @@ jobs:
             fi
             echo "::notice::O secret $secret configurado com sucesso"
           done
+
+  # ────────────────────────────────────────────────────────────────
+  # JOB 2 — Build
+  # ────────────────────────────────────────────────────────────────
+  build:
+    name: Simulação de build do projeto
+    needs: verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do Código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - name: 🔐 Inserir Secrets no JavaScript
         env:
@@ -83,111 +97,176 @@ jobs:
           echo "Verificando arquivos..."
           ls src/
           echo "Build OK!"
-                
-      - name: 🔑 Secrets Scanning [histórico completo]
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-        run: |
-          # v8.30.1
-          docker run --rm \
-            -v "${{ github.workspace }}:/repo" \
-            -w /repo \
-            ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
-            git --verbose --redact --log-opts="--all" .
+   
+  # ────────────────────────────────────────────────────────────────
+  # JOB 3.1 — Scan de Secrets
+  # ────────────────────────────────────────────────────────────────
+  secret-scan:
+    name: Scan de Secrets
+    needs: build
+    runs-on: ubuntu-latest
 
-      - name: 🔑 Secrets Scanning [commits do evento]
-        if: github.event_name == 'pull_request' || github.event_name == 'push'
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.after }}
-        shell: bash
-        run: |
-          if [[ "$BASE_SHA" =~ ^0+$ ]]; then
-            LOG_OPTS="--all"
-          else
-            LOG_OPTS="--all $BASE_SHA..$HEAD_SHA"
-          fi
+    steps:
+    - name: 📥 Checkout do Código
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
 
-          # v8.30.1
-          docker run --rm \
-            -v "${{ github.workspace }}:/repo" \
-            -w /repo \
-            ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
-            git --verbose --redact --log-opts="$LOG_OPTS" 
+    - name: 🔑 Secrets Scanning [histórico completo]
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+      run: |
+        # v8.30.1
+        docker run --rm \
+          -v "${{ github.workspace }}:/repo" \
+          -w /repo \
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+          git --verbose --redact --log-opts="--all" .
 
-      - name: 🔍 SAST - Semgrep
-        shell: bash
-        run: |
-          python3 -m pip install semgrep
-          semgrep scan --config auto --config p/xss --error src/
+    - name: 🔑 Secrets Scanning [commits do evento]
+      if: github.event_name == 'pull_request' || github.event_name == 'push'
+      env:
+        BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.after }}
+      shell: bash
+      run: |
+        if [[ "$BASE_SHA" =~ ^0+$ ]]; then
+          LOG_OPTS="--all"
+        else
+          LOG_OPTS="--all $BASE_SHA..$HEAD_SHA"
+        fi
 
-      - name: 📦 SCA - Geração do package-lock
-        run: |
-          npm install --package-lock-only --no-audit --no-fund
-
-      - name: 📦 SCA - Instalação do Grype
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
-            | sh -s -- -b /usr/local/bin
-
-          echo "/usr/local/bin" >> $GITHUB_PATH
-
-          grype dir:. --fail-on medium
-
-      # ── Empacota o site em um artefato tar (formato que o Pages consome)
-      - name: 📦 Empacotar artefato do site
-        run: |
-          tar \
-            --dereference --hard-dereference \
-            -C src \
-            -cvf artifact.tar \
-            --exclude=.git --exclude=.github \
-            .
-
-      # ── Calcula o hash do artefato
-      - name: 🔢 Hash do artefato
-        run: |
-          digest=$(sha256sum artifact.tar | awk '{print $1}')
-          echo "$digest" > artifact.tar.sha256
-          echo "SHA256: $digest"
-
-      - name: ✍️ Instalar Cosign
-        uses: sigstore/cosign-installer@v3
-
-      # ❌ PASSO A IMPLEMENTAR — Assinatura via Cosign
-      # Este passo NÃO assina de verdade — ele gera um bundle falso, só para
-      # demonstração.
-      #
-      # Dica da assinatura real:
-      #   cosign sign-blob artifact.tar --bundle artifact.sigstore.json --yes
-      - name: ✍️ Assinar artefato
-        run: |
-          echo '{ "mock": "assinatura-invalida-para-demonstracao" }' > artifact.sigstore.json
-          echo "Assinatura MOCK gerada."
-
-      # ── Publica o artefato + bundle de assinatura para o próximo job
-      - name: ⬆️ Upload do artefato assinado
-        uses: actions/upload-artifact@v4
-        with:
-          name: site-assinado
-          path: |
-            artifact.tar
-            artifact.sigstore.json
-            artifact.tar.sha256
-          retention-days: 1
+        # v8.30.1
+        docker run --rm \
+          -v "${{ github.workspace }}:/repo" \
+          -w /repo \
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f \
+          git --verbose --redact --log-opts="$LOG_OPTS" 
 
   # ────────────────────────────────────────────────────────────────
-  # JOB 2 — Verifica a assinatura e só então faz o deploy
+  # JOB 3.2 — SAST - Semgrep
+  # ────────────────────────────────────────────────────────────────
+  sast-semgrep:
+    name: SAST - Semgrep
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout do Código
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+
+    - name: 🔍 SAST - Semgrep
+      shell: bash
+      run: |
+        python3 -m pip install semgrep
+        semgrep scan --config auto --config p/xss --error src/
+
+  # ────────────────────────────────────────────────────────────────
+  # JOB 3.3 — SCA - Grype
+  # ────────────────────────────────────────────────────────────────
+  sca-grype:
+    name: SCA - Grype
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout do Código
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+
+    - name: 📦 SCA - Geração do package-lock
+      run: |
+        npm install --package-lock-only --no-audit --no-fund
+
+    - name: 📦 SCA - Instalação do Grype
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
+          | sh -s -- -b /usr/local/bin
+
+        echo "/usr/local/bin" >> $GITHUB_PATH
+
+        grype dir:. --fail-on medium
+
+  # ────────────────────────────────────────────────────────────────
+  # JOB 4 — Empacotamento, assinatura e upload do artefato
+  # ────────────────────────────────────────────────────────────────
+  package-artifact:
+    name: Empacotar Artefato
+    needs: [secret-scan, sast-semgrep, sca-grype]
+    if: >-
+      needs.secret-scan.result == 'success' &&
+      needs.sast-semgrep.result == 'success' &&
+      needs.sca-grype.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout do Código
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+
+    # ── Empacota o site em um artefato tar (formato que o Pages consome)
+    - name: 📦 Empacotar artefato do site
+      run: |
+        tar \
+          --dereference --hard-dereference \
+          -C src \
+          -cvf artifact.tar \
+          --exclude=.git --exclude=.github \
+          .
+
+    # ── Calcula o hash do artefato
+    - name: 🔢 Hash do artefato
+      run: |
+        digest=$(sha256sum artifact.tar | awk '{print $1}')
+        echo "$digest" > artifact.tar.sha256
+        echo "SHA256: $digest"
+
+    - name: ✍️ Instalar Cosign
+      uses: sigstore/cosign-installer@v3
+
+    # ❌ PASSO A IMPLEMENTAR — Assinatura via Cosign
+    # Este passo NÃO assina de verdade — ele gera um bundle falso, só para
+    # demonstração.
+    #
+    # Dica da assinatura real:
+    #   cosign sign-blob artifact.tar --bundle artifact.sigstore.json --yes
+    - name: ✍️ Assinar artefato
+      run: |
+        echo '{ "mock": "assinatura-invalida-para-demonstracao" }' > artifact.sigstore.json
+        echo "Assinatura MOCK gerada."
+
+    # ── Publica o artefato + bundle de assinatura para o próximo job
+    - name: ⬆️ Upload do artefato assinado
+      uses: actions/upload-artifact@v4
+      with:
+        name: site-assinado
+        path: |
+          artifact.tar
+          artifact.sigstore.json
+          artifact.tar.sha256
+        retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────
+  # JOB 5 — Verifica a assinatura e só então faz o deploy
   # ────────────────────────────────────────────────────────────────
   deploy:
     name: Verificação e Deploy
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.package-artifact.result == 'success'
+    needs: package-artifact
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      - name: 📥 Checkout do Código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
       - name: ⬇️ Baixar o artefato assinado
         uses: actions/download-artifact@v4
         with:
