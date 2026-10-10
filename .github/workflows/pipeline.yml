@@ -230,8 +230,7 @@ jobs:
 
     - name: ✍️ Assinar artefato
       run: |
-        echo '{ "mock": "assinatura-invalida-para-demonstracao" }' > artifact.sigstore.json
-        echo "Assinatura MOCK gerada."
+        cosign sign-blob --yes --bundle artifact.sigstore.json artifact.tar
 
     # ── Publica o artefato + bundle de assinatura para o próximo job
     - name: ⬆️ Upload do artefato assinado
