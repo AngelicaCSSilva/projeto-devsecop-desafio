@@ -127,7 +127,7 @@ jobs:
       - name: 📦 SCA - Instalação do Grype
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
-            sh -s -- -b /usr/local/bin
+            | sh -s -- -b /usr/local/bin
 
           echo "/usr/local/bin" >> $GITHUB_PATH
 
