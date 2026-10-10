@@ -63,4 +63,20 @@ src/script.js
 
 13. [Correção validada pelo workflow](https://github.com/AngelicaCSSilva/projeto-devsecop-desafio/actions/runs/37872696239). 
 
-14. 
+14. A action Gitleaks fixada no workflow (`gitleaks/gitleaks-action` v3.0.0) apresenta uma limitação documentada no [issue #236](https://github.com/gitleaks/gitleaks-action/issues/236): nos eventos `push` e `pull_request`, são usados os argumentos `--no-merges --first-parent` no intervalo do `git log`, sem uma opção para substituí-los. Com `--first-parent`, commits alcançáveis apenas pelo segundo pai de um merge podem ficar fora da análise; com `--no-merges`, os próprios commits de merge são excluídos. Como consequência, o job pode terminar com sucesso sem examinar todo o conteúdo introduzido pelo merge. A ausência de achados nessa execução não comprova que o repositório esteja livre de segredos. Neste workflow, o gatilho configurado é `push` para `main`; portanto, o merge do PR gera o push que executa a análise.
+
+Como alternativa, recomenda-se substituir a action pelo Gitleaks CLI e definir explicitamente o escopo da análise. Para examinar o histórico completo do repositório, pode ser usado o seguinte comando:
+
+```bash
+docker run --rm \
+  -v "${{ github.workspace }}:/repo" \
+  -w /repo \
+  ghcr.io/gitleaks/gitleaks:<versao> \
+  git --verbose --redact .
+```
+
+Para analisar apenas um intervalo de commits, usa-se `LOG_OPTS="--all $BASE_SHA..$HEAD_SHA"`
+
+15. Versão da imagem do GitLeaks fixada por SHA (v8.30.1), evitando o uso de `latest` ou tags.
+
+
