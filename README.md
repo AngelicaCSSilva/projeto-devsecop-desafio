@@ -6,7 +6,7 @@ Você receberá este projeto com vulnerabilidades propositais e uma pipeline inc
 Seu objetivo é **implementar a pipeline de segurança** e **corrigir as vulnerabilidades**.
 
 ## Estado atual
-A pipeline está **incompleta**. Os steps de segurança precisam ser implementados por você.
+✅ A pipeline está **completa**.
 
 ## Sua missão
 1. Implementar os steps de segurança no `pipeline.yml`
@@ -54,4 +54,4 @@ O workflow criado realiza as seguintes etapas. Depois do Build, as análises com
     > **Em palavras simples:** confirma que o pacote não mudou e que a assinatura é esperada antes de publicar.
 
 ## URL de Produção
-> Adicione aqui o link do GitHub Pages após o deploy.
+> [Link para o projeto no Github Pages](https://angelicacssilva.github.io/projeto-devsecop-desafio/)

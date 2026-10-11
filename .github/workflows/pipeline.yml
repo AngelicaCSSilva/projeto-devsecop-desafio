@@ -21,6 +21,10 @@ on:
   # schedule:
   #   - cron: '0 3 * * 1' # Toda segunda-feira, 00:00 no horário de Brasília (UTC-3)
 
+concurrency:
+  group: pipeline-devsecops-${{ github.head_ref && github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pages: write
