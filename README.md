@@ -54,4 +54,4 @@ O workflow criado realiza as seguintes etapas. Depois do Build, as análises com
     > **Em palavras simples:** confirma que o pacote não mudou e que a assinatura é esperada antes de publicar.
 
 ## URL de Produção
-> Adicione aqui o link do GitHub Pages após o deploy.
+> [Link para o projeto no Github Pages](https://angelicacssilva.github.io/projeto-devsecop-desafio/)
