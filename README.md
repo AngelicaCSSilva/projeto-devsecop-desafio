@@ -6,7 +6,7 @@ Você receberá este projeto com vulnerabilidades propositais e uma pipeline inc
 Seu objetivo é **implementar a pipeline de segurança** e **corrigir as vulnerabilidades**.
 
 ## Estado atual
-A pipeline está **incompleta**. Os steps de segurança precisam ser implementados por você.
+✅ A pipeline está **completa**.
 
 ## Sua missão
 1. Implementar os steps de segurança no `pipeline.yml`
