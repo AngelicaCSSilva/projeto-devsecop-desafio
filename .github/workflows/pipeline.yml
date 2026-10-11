@@ -197,6 +197,7 @@ jobs:
     name: Empacotar Artefato
     needs: [secret-scan, sast-semgrep, sca-grype]
     if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.secret-scan.result == 'success' &&
       needs.sast-semgrep.result == 'success' &&
       needs.sca-grype.result == 'success'
