@@ -1,4 +1,4 @@
-name: 🔐 Pipeline DevSecOps
+name: Pipeline DevSecOps
 run-name:  ${{ github.head_ref && format('🔐 Pipeline DevSecOps - {0} | {1}', github.head_ref, github.ref_name) || format('🔐 Pipeline DevSecOps - {0}', github.ref_name) }}
 
 on:
