@@ -16,11 +16,11 @@ A pipeline está **incompleta**. Os steps de segurança precisam ser implementad
 5. Documentar o funcionamento da pipeline neste README
 
 ## O que implementar
-- [ ] Secrets Scanning com **Gitleaks**
-- [ ] SAST com **Semgrep**
-- [ ] SCA com **Grype**
-- [ ] Assinatura do artefato com cosign
-- [ ] Deploy com **GitHub Pages**
+- [X] Secrets Scanning com **Gitleaks**
+- [X] SAST com **Semgrep**
+- [X] SCA com **Grype**
+- [X] Assinatura do artefato com cosign
+- [X] Deploy com **GitHub Pages**
 
 ## Como a pipeline funciona
 > [!NOTE]
@@ -37,10 +37,21 @@ O workflow criado realiza as seguintes etapas. Depois do Build, as análises com
 4. **Faz uma conferência básica.** A etapa chamada “Build” só lista os arquivos e escreve “Build OK”. Ela ainda não constrói nem testa o site, servindo apenas como uma etapa ilustrativa.
 
 5. **Procura credenciais expostas com Gitleaks.** Ele verifica os commits incluídos na execução, procurando valores que pareçam senhas ou chaves salvos no Git. Essa busca não confere o arquivo que foi alterado temporariamente durante a execução.
+   > **Em palavras simples:** procura senhas e chaves que foram salvas no histórico do projeto.
 
 6. **Analisa o código com Semgrep.** Essa ferramenta procura padrões que podem indicar falhas de segurança. A opção `--error` faz essa etapa falhar se a análise encontrar problemas.
+   > **Em palavras simples:** procura no código trechos que possam abrir brechas de segurança.
 
 7. **Verifica as dependências com Grype (SCA).** A pipeline gera uma lista das dependências do projeto e procura vulnerabilidades conhecidas nelas. Se encontrar alguma de nível médio ou mais alto, a etapa falha.
+   > **Em palavras simples:** confere se as bibliotecas usadas pelo projeto têm falhas conhecidas.
+
+8. **Empacota o site e calcula seu hash.** Se as análises forem aprovadas, os arquivos do site são reunidos em um pacote. A pipeline calcula uma impressão digital (hash) desse pacote e a guarda em um arquivo separado.
+
+9. **Assina o pacote com Cosign.** O Cosign cria uma assinatura digital usando uma identidade temporária fornecida pelo GitHub Actions. Não é necessário guardar uma chave privada permanente no repositório. A assinatura é enviada junto com o pacote.
+   > **Em palavras simples:** cria um comprovante digital que identifica o workflow que assinou o pacote.
+
+10. **Confere a assinatura antes de publicar.** No push para a branch `main`, o workflow confere se o pacote continua igual ao que foi assinado e se a assinatura corresponde a uma identidade esperada do GitHub Actions neste repositório. Se a conferência falhar, o deploy é interrompido. Se passar, o site é extraído e publicado no GitHub Pages.
+    > **Em palavras simples:** confirma que o pacote não mudou e que a assinatura é esperada antes de publicar.
 
 ## URL de Produção
 > Adicione aqui o link do GitHub Pages após o deploy.
